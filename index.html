@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rydr — Your Ride</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #f5f4f0;
+    --cream: #f0ede6;
+    --accent: #c8f54a;
+    --accent-dark: #a8d930;
+    --gray: #1e1e1e;
+    --gray2: #2e2e2e;
+    --gray3: #888;
+    --gray4: #555;
+    --card: #161616;
+    --border: #2a2a2a;
+    --map-bg: #1a1f2e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--black); }
+  body { font-family: 'DM Sans', sans-serif; color: var(--white); display: flex; justify-content: center; }
+
+  /* PHONE SHELL */
+  .phone {
+    width: 100%;
+    max-width: 430px;
+    height: 100dvh;
+    position: relative;
+    overflow: hidden;
+    background: var(--black);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px 4px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    z-index: 100;
+    position: relative;
+  }
+  .status-time { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; fill: var(--white); }
+
+  /* MAP */
+  .map-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--map-bg);
+  }
+  canvas#mapCanvas { width: 100%; height: 100%; display: block; }
+
+  /* MAP OVERLAYS */
+  .map-btn {
+    position: absolute;
+    background: var(--black);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    transition: transform 0.15s;
+  }
+  .map-btn:active { transform: scale(0.92); }
+  .map-btn svg { width: 20px; height: 20px; stroke: var(--white); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn-locate { bottom: 20px; right: 16px; }
+  .btn-layers { bottom: 72px; right: 16px; }
+
+  /* HEADER ON MAP */
+  .map-header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 14px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, transparent 100%);
+    z-index: 10;
+  }
+  .logo { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+  .logo span { color: var(--accent); }
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c8f54a, #4af5a0);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--black);
+    cursor: pointer;
+  }
+
+  /* BOTTOM SHEET */
+  .bottom-sheet {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--black);
+    border-radius: 28px 28px 0 0;
+    padding: 12px 20px 32px;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.7);
+    z-index: 50;
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 18px;
+  }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* SCREEN 1: HOME */
+  .greeting { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+  .greeting span { color: var(--accent); }
+
+  .search-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px;
+    margin-bottom: 16px;
+  }
+  .search-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: background 0.15s;
+  }
+  .search-row:hover, .search-row:active { background: var(--gray2); }
+  .search-row:first-child { border-bottom: 1px solid var(--border); margin-bottom: 2px; }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-pickup { background: var(--accent); }
+  .dot-dest { background: #ff6b6b; }
+  .search-text {
+    flex: 1;
+    font-size: 15px;
+    color: var(--gray3);
+  }
+  .search-text.filled { color: var(--white); }
+
+  /* QUICK ACTIONS */
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray3); margin-bottom: 10px; }
+  .quick-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .quick-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .quick-card:active { transform: scale(0.97); background: var(--gray2); }
+  .quick-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .qi-home { background: rgba(200,245,74,0.15); }
+  .qi-work { background: rgba(74,164,245,0.15); }
+  .qi-gym { background: rgba(245,74,164,0.15); }
+  .qi-airport { background: rgba(245,174,74,0.15); }
+  .quick-icon svg { width: 18px; height: 18px; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .qi-home svg { stroke: var(--accent); }
+  .qi-work svg { stroke: #4aa4f5; }
+  .qi-gym svg { stroke: #f54aa8; }
+  .qi-airport svg { stroke: #f5ae4a; }
+  .quick-info { min-width: 0; }
+  .quick-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .quick-dist { font-size: 12px; color: var(--gray3); }
+
+  /* SCREEN 2: LOCATION INPUT */
+  .back-btn {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: var(--gray3);
+    cursor: pointer;
+    margin-bottom: 18px;
+    width: fit-content;
+  }
+  .back-btn svg { width: 18px; height: 18px; stroke: var(--gray3); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  .input-group {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .input-group::before {
+    content: '';
+    position: absolute;
+    left: 27px;
+    top: 42px;
+    bottom: 42px;
+    width: 1px;
+    background: repeating-linear-gradient(to bottom, var(--border) 0px, var(--border) 4px, transparent 4px, transparent 8px);
+  }
+  .input-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    cursor: text;
+  }
+  .input-field:first-child { border-bottom: 1px solid var(--border); }
+  .input-field input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+  }
+  .input-field input::placeholder { color: var(--gray3); }
+
+  .suggestions-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray4); margin-bottom: 8px; padding-left: 2px; }
+  .suggestion-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 4px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+    border-radius: 8px;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:active { background: var(--card); }
+  .sug-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sug-icon svg { width: 16px; height: 16px; stroke: var(--gray3); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .sug-text { flex: 1; min-width: 0; }
+  .sug-name { font-size: 14px; font-weight: 500; }
+  .sug-addr { font-size: 12px; color: var(--gray3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sug-dist { font-size: 12px; color: var(--gray3); flex-shrink: 0; }
+
+  /* SCREEN 3: RIDE OPTIONS */
+  .ride-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .ride-route { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+  .ride-eta { font-size: 13px; color: var(--gray3); }
+  .ride-eta span { color: var(--accent); font-weight: 600; }
+
+  .ride-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .ride-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .ride-card.selected {
+    border-color: var(--accent);
+    background: rgba(200,245,74,0.06);
+  }
+  .ride-card:active { transform: scale(0.98); }
+  .ride-car-icon {
+    width: 52px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ride-car-icon svg { width: 100%; height: 100%; }
+  .ride-info { flex: 1; }
+  .ride-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+  .ride-detail { font-size: 12px; color: var(--gray3); margin-top: 2px; }
+  .ride-price-block { text-align: right; }
+  .ride-price { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800; }
+  .ride-time { font-size: 12px; color: var(--gray3); }
+  .ride-badge {
+    position: absolute;
+    top: -8px; right: 12px;
+    background: var(--accent);
+    color: var(--black);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .payment-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    cursor: pointer;
+  }
+  .pay-left { display: flex; align-items: center; gap: 10px; }
+  .pay-icon {
+    width: 32px; height: 32px;
+    background: var(--gray2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pay-icon svg { width: 16px; height: 16px; stroke: var(--white); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pay-label { font-size: 14px; font-weight: 500; }
+  .pay-change { font-size: 12px; color: var(--accent); font-weight: 600; }
+
+  /* SCREEN 4: BOOKING */
+  .booking-anim {
+    text-align: center;
+    padding: 10px 0 20px;
+  }
+  .pulse-ring {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(200,245,74,0.15);
+    border: 2px solid var(--accent);
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    animation: pulse 1.5s ease-in-out infinite;
+    position: relative;
+  }
+  .pulse-ring::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    border: 1px solid rgba(200,245,74,0.3);
+    animation: pulse 1.5s ease-in-out infinite 0.3s;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.7; }
+  }
+  .pulse-ring svg { width: 36px; height: 36px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .booking-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .booking-sub { font-size: 14px; color: var(--gray3); }
+
+  .driver-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .driver-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+  }
+  .driver-info { flex: 1; }
+  .driver-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+  .driver-car { font-size: 13px; color: var(--gray3); margin-top: 2px; }
+  .driver-rating { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; margin-top: 4px; }
+  .star { color: #ffd700; }
+  .driver-eta-badge {
+    background: var(--accent);
+    color: var(--black);
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  .driver-eta-badge small { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; }
+
+  .action-row {
+    display: flex; gap: 8px;
+    margin-top: 12px;
+  }
+  .action-btn {
+    flex: 1;
+    padding: 13px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .action-btn:active { transform: scale(0.96); }
+  .action-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .action-btn.cancel { color: #ff6b6b; border-color: rgba(255,107,107,0.3); }
+
+  /* PRIMARY BUTTON */
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: var(--black);
+    border: none;
+    border-radius: 16px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary:active { transform: scale(0.98); background: var(--accent-dark); }
+  .btn-primary svg { width: 18px; height: 18px; stroke: var(--black); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .btn-primary:disabled { background: var(--gray2); color: var(--gray4); cursor: not-allowed; }
+
+  /* SCROLLABLE CONTENT */
+  .sheet-scroll { overflow-y: auto; max-height: 55vh; padding-bottom: 4px; }
+  .sheet-scroll::-webkit-scrollbar { display: none; }
+
+  /* TOAST */
+  .toast {
+    position: absolute;
+    top: 80px; left: 20px; right: 20px;
+    background: var(--gray);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 200;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s;
+    pointer-events: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+  /* LOADING DOTS */
+  .loading-dots span {
+    display: inline-block;
+    width: 5px; height: 5px;
+    background: var(--gray3);
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: blink 1.2s infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+  /* RIDE PROGRESS BAR */
+  .progress-track {
+    height: 4px; background: var(--border); border-radius: 2px;
+    margin: 16px 0 8px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent); border-radius: 2px;
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+  .progress-steps {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--gray3);
+  }
+  .progress-steps span.done { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <span class="status-time" id="clockTime">9:41</span>
+    <div class="status-icons">
+      <svg viewBox="0 0 24 24"><path d="M1 6s4.5-5 11-5 11 5 11 5M5 10s3.5-4 7-4 7 4 7 4M9 14s1.5-2 3-2 3 2 3 2M12 18h.01"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="11" rx="2"/><path d="M22 11v3"/><rect x="4" y="9" width="10" height="7" rx="1" style="fill:currentColor"/></svg>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-container">
+    <canvas id="mapCanvas"></canvas>
+    <div class="map-header">
+      <div class="logo">RY<span>DR</span></div>
+      <div class="avatar">JD</div>
+    </div>
+    <button class="map-btn btn-locate" onclick="locateMe()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>
+    </button>
+    <button class="map-btn btn-layers" onclick="showToast('Satellite view')">
+      <svg viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+    </button>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"><div class="toast-dot"></div><span id="toastMsg"></span></div>
+
+  <!-- BOTTOM SHEET -->
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-handle"></div>
+
+    <!-- SCREEN 1: HOME -->
+    <div class="screen active" id="screen-home">
+      <div class="greeting">Where to, <span>James?</span></div>
+      <div class="search-box">
+        <div class="search-row" onclick="openLocationScreen('pickup')">
+          <div class="dot dot-pickup"></div>
+          <div class="search-text filled" id="pickupDisplay">Current location</div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="search-row" onclick="openLocationScreen('dest')">
+          <div class="dot dot-dest"></div>
+          <div class="search-text" id="destDisplay">Where are you going?</div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+      <div class="section-label">Saved places</div>
+      <div class="quick-grid">
+        <div class="quick-card" onclick="setDest('Home', '2.1 km')">
+          <div class="quick-icon qi-home"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+          <div class="quick-info"><div class="quick-name">Home</div><div class="quick-dist">2.1 km</div></div>
+        </div>
+        <div class="quick-card" onclick="setDest('Work', '5.4 km')">
+          <div class="quick-icon qi-work"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+          <div class="quick-info"><div class="quick-name">Work</div><div class="quick-dist">5.4 km</div></div>
+        </div>
+        <div class="quick-card" onclick="setDest('FitLife Gym', '1.3 km')">
+          <div class="quick-icon qi-gym"><svg viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M2 8h4M18 8h4M2 16h4M18 16h4"/></svg></div>
+          <div class="quick-info"><div class="quick-name">Gym</div><div class="quick-dist">1.3 km</div></div>
+        </div>
+        <div class="quick-card" onclick="setDest('JFK Airport', '28 km')">
+          <div class="quick-icon qi-airport"><svg viewBox="0 0 24 24"><path d="M22 16.5l-12-3L2.5 21 1 19.5l6.5-7.5L1 8l1.5-1.5 8.5 4L18.5 2 22 5.5z"/></svg></div>
+          <div class="quick-info"><div class="quick-name">Airport</div><div class="quick-dist">28 km</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: LOCATION INPUT -->
+    <div class="screen" id="screen-location">
+      <div class="back-btn" onclick="goHome()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </div>
+      <div class="input-group">
+        <div class="input-field">
+          <div class="dot dot-pickup"></div>
+          <input type="text" id="pickupInput" placeholder="Pickup location" value="Current location" oninput="filterSuggestions(this.value,'pickup')">
+        </div>
+        <div class="input-field">
+          <div class="dot dot-dest"></div>
+          <input type="text" id="destInput" placeholder="Where to?" oninput="filterSuggestions(this.value,'dest')">
+        </div>
+      </div>
+      <div class="suggestions-label" id="sugLabel">Suggestions</div>
+      <div class="sheet-scroll" id="suggestionsList"></div>
+    </div>
+
+    <!-- SCREEN 3: RIDE OPTIONS -->
+    <div class="screen" id="screen-rides">
+      <div class="ride-meta">
+        <div>
+          <div class="ride-route" id="rideRouteLabel">To Destination</div>
+          <div class="ride-eta">Driver arrives in <span id="etaMin">3</span> min</div>
+        </div>
+        <div class="back-btn" onclick="backToLocation()" style="margin:0">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </div>
+      </div>
+
+      <div class="progress-track"><div class="progress-fill" id="routeProgress"></div></div>
+      <div class="progress-steps">
+        <span class="done">Pickup</span>
+        <span id="step2" class="done">Route</span>
+        <span id="step3">Confirm</span>
+      </div>
+
+      <div class="ride-options" id="rideOptions">
+        <div class="ride-card selected" onclick="selectRide(this,'Economy','$8.50','8 min')" data-name="Economy">
+          <div class="ride-badge">BEST VALUE</div>
+          <div class="ride-car-icon">
+            <svg viewBox="0 0 64 36" fill="none">
+              <rect x="8" y="14" width="48" height="16" rx="4" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+              <path d="M16 14l6-10h20l6 10" fill="#333" stroke="#444" stroke-width="1"/>
+              <circle cx="18" cy="32" r="5" fill="#555" stroke="#888" stroke-width="1.5"/>
+              <circle cx="46" cy="32" r="5" fill="#555" stroke="#888" stroke-width="1.5"/>
+              <rect x="20" y="5" width="24" height="8" rx="2" fill="#1a2a3a" stroke="#2a3a4a" stroke-width="0.5"/>
+            </svg>
+          </div>
+          <div class="ride-info">
+            <div class="ride-name">Economy</div>
+            <div class="ride-detail">4 seats · Compact</div>
+          </div>
+          <div class="ride-price-block">
+            <div class="ride-price">$8.50</div>
+            <div class="ride-time">8 min away</div>
+          </div>
+        </div>
+
+        <div class="ride-card" onclick="selectRide(this,'Comfort','$13.20','5 min')" data-name="Comfort">
+          <div class="ride-car-icon">
+            <svg viewBox="0 0 64 36" fill="none">
+              <rect x="6" y="12" width="52" height="18" rx="5" fill="#1e2535" stroke="#3a4a6a" stroke-width="1"/>
+              <path d="M14 12l7-11h22l7 11" fill="#253045" stroke="#3a4a6a" stroke-width="1"/>
+              <circle cx="17" cy="33" r="5" fill="#3a4a6a" stroke="#5a7aaa" stroke-width="1.5"/>
+              <circle cx="47" cy="33" r="5" fill="#3a4a6a" stroke="#5a7aaa" stroke-width="1.5"/>
+              <rect x="18" y="3" width="28" height="8" rx="2" fill="#1a2a4a" stroke="#2a4a7a" stroke-width="0.5"/>
+            </svg>
+          </div>
+          <div class="ride-info">
+            <div class="ride-name">Comfort</div>
+            <div class="ride-detail">4 seats · Spacious</div>
+          </div>
+          <div class="ride-price-block">
+            <div class="ride-price">$13.20</div>
+            <div class="ride-time">5 min away</div>
+          </div>
+        </div>
+
+        <div class="ride-card" onclick="selectRide(this,'XL','$21.00','7 min')" data-name="XL">
+          <div class="ride-car-icon">
+            <svg viewBox="0 0 64 36" fill="none">
+              <rect x="4" y="10" width="56" height="20" rx="5" fill="#1f1a0e" stroke="#5a4a2a" stroke-width="1"/>
+              <path d="M12 10l6-9h28l6 9" fill="#2a230f" stroke="#5a4a2a" stroke-width="1"/>
+              <circle cx="16" cy="33" r="5" fill="#4a3a1a" stroke="#8a6a3a" stroke-width="1.5"/>
+              <circle cx="48" cy="33" r="5" fill="#4a3a1a" stroke="#8a6a3a" stroke-width="1.5"/>
+              <rect x="16" y="2" width="32" height="8" rx="2" fill="#1a1508" stroke="#3a2a0a" stroke-width="0.5"/>
+            </svg>
+          </div>
+          <div class="ride-info">
+            <div class="ride-name">XL</div>
+            <div class="ride-detail">6 seats · SUV</div>
+          </div>
+          <div class="ride-price-block">
+            <div class="ride-price">$21.00</div>
+            <div class="ride-time">7 min away</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="payment-row" onclick="showToast('Payment options')">
+        <div class="pay-left">
+          <div class="pay-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="pay-label">•••• 4242</div>
+        </div>
+        <div class="pay-change">Change</div>
+      </div>
+
+      <button class="btn-primary" onclick="confirmRide()">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Confirm Ride
+      </button>
+    </div>
+
+    <!-- SCREEN 4: BOOKING/TRACKING -->
+    <div class="screen" id="screen-booking">
+      <div class="booking-anim" id="searchingAnim">
+        <div class="pulse-ring">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="booking-title">Finding your driver</div>
+        <div class="booking-sub">Connecting to nearby drivers <span class="loading-dots"><span></span><span></span><span></span></span></div>
+      </div>
+
+      <div id="driverFound" style="display:none">
+        <div class="driver-card">
+          <div class="driver-avatar">MK</div>
+          <div class="driver-info">
+            <div class="driver-name">Marcus K.</div>
+            <div class="driver-car">Tesla Model 3 · Grey · 4KZ 829</div>
+            <div class="driver-rating"><span class="star">★</span> 4.95 · 1,240 trips</div>
+          </div>
+          <div class="driver-eta-badge" id="liveEta">3<small>MIN</small></div>
+        </div>
+        <div class="action-row">
+          <button class="action-btn" onclick="showToast('Calling driver…')">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.8 10.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012.7 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.6a16 16 0 006.29 6.29l1.06-1.06a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z"/></svg>
+            Call
+          </button>
+          <button class="action-btn" onclick="showToast('Opening chat')">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Message
+          </button>
+          <button class="action-btn" onclick="showToast('Sharing trip…')">
+            <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share
+          </button>
+        </div>
+        <div class="progress-track" style="margin-top:16px"><div class="progress-fill" id="tripProgress" style="width:20%"></div></div>
+        <div class="progress-steps">
+          <span class="done">Confirmed</span>
+          <span id="tp2">Arriving</span>
+          <span id="tp3">On trip</span>
+          <span id="tp4">Done</span>
+        </div>
+        <button class="action-btn cancel" onclick="cancelRide()" style="width:100%;margin-top:12px;padding:13px;">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Cancel Ride
+        </button>
+      </div>
+    </div>
+
+  </div><!-- end bottom-sheet -->
+</div><!-- end phone -->
+
+<script>
+// ─────── STATE ───────
+const state = {
+  pickup: 'Current location',
+  dest: '',
+  destLabel: '',
+  activeInput: 'dest',
+  selectedRide: 'Economy',
+  ridePrice: '$8.50',
+  rideEta: '8 min',
+};
+
+// ─────── CLOCK ───────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockTime').textContent =
+    now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ─────── MAP ───────
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
+let mapOffset = {x:0, y:0};
+let carPos = {x:0.5, y:0.55};
+let destMarker = null;
+let animFrame;
+let carAngle = 0;
+let routeDrawn = false;
+let pickupMarker = null;
+
+function resizeCanvas() {
+  const container = canvas.parentElement;
+  canvas.width = container.offsetWidth;
+  canvas.height = container.offsetHeight;
+  drawMap();
+}
+
+function drawMap() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const ox = mapOffset.x, oy = mapOffset.y;
+
+  // Background
+  ctx.fillStyle = '#141824';
+  ctx.fillRect(0,0,w,h);
+
+  // Grid – subtle
+  ctx.strokeStyle = '#1c2232';
+  ctx.lineWidth = 0.5;
+  for(let x = (ox%60)-60; x < w+60; x+=60) {
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+  }
+  for(let y = (oy%60)-60; y < h+60; y+=60) {
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+
+  // Roads
+  const roads = [
+    {x1:0,y1:0.25,x2:1,y2:0.27,w:14,color:'#1e2535'},
+    {x1:0,y1:0.45,x2:1,y2:0.48,w:10,color:'#1e2535'},
+    {x1:0,y1:0.7,x2:1,y2:0.68,w:18,color:'#222a40'},
+    {x1:0.2,y1:0,x2:0.18,y2:1,w:12,color:'#1e2535'},
+    {x1:0.5,y1:0,x2:0.52,y2:1,w:16,color:'#222a40'},
+    {x1:0.75,y1:0,x2:0.74,y2:1,w:10,color:'#1e2535'},
+    // diagonal
+    {x1:0,y1:0.85,x2:0.4,y2:0,w:8,color:'#1a2030'},
+  ];
+  roads.forEach(r => {
+    ctx.beginPath();
+    ctx.moveTo(r.x1*w+ox, r.y1*h+oy);
+    ctx.lineTo(r.x2*w+ox, r.y2*h+oy);
+    ctx.strokeStyle = r.color;
+    ctx.lineWidth = r.w;
+    ctx.stroke();
+
+    // Road line
+    ctx.beginPath();
+    ctx.setLineDash([20,15]);
+    ctx.moveTo(r.x1*w+ox, r.y1*h+oy);
+    ctx.lineTo(r.x2*w+ox, r.y2*h+oy);
+    ctx.strokeStyle = '#2a3550';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Blocks/buildings
+  const buildings = [
+    {x:0.22,y:0.28,w:0.1,h:0.15,c:'#1a2030'},{x:0.35,y:0.28,w:0.12,h:0.15,c:'#1a2535'},
+    {x:0.22,y:0.5,w:0.08,h:0.16,c:'#1c2235'},{x:0.55,y:0.3,w:0.15,h:0.12,c:'#171d2d'},
+    {x:0.55,y:0.5,w:0.17,h:0.15,c:'#1c2438'},{x:0.78,y:0.28,w:0.1,h:0.14,c:'#1a2030'},
+    {x:0.78,y:0.5,w:0.09,h:0.15,c:'#171d2d'},{x:0.35,y:0.5,w:0.11,h:0.17,c:'#1e2840'},
+    {x:0.06,y:0.28,w:0.09,h:0.15,c:'#181e2e'},{x:0.06,y:0.5,w:0.1,h:0.16,c:'#1a2030'},
+    {x:0.22,y:0.72,w:0.25,h:0.12,c:'#1c2235'},{x:0.55,y:0.72,w:0.32,h:0.12,c:'#1e2840'},
+  ];
+  buildings.forEach(b => {
+    ctx.fillStyle = b.c;
+    ctx.beginPath();
+    const bx = b.x*w+ox, by = b.y*h+oy;
+    roundRect(ctx, bx, by, b.w*w, b.h*h, 3);
+    ctx.fill();
+    // Tiny windows
+    ctx.fillStyle = 'rgba(200,245,74,0.07)';
+    for(let wy=by+6; wy<by+b.h*h-6; wy+=10) {
+      for(let wx=bx+6; wx<bx+b.w*w-6; wx+=10) {
+        if(Math.random()>0.4) { ctx.fillRect(wx,wy,5,4); }
+      }
+    }
+  });
+
+  // Route line
+  if(routeDrawn && destMarker) {
+    const sx = carPos.x*w, sy = carPos.y*h;
+    const dx = destMarker.x*w, dy = destMarker.y*h;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.bezierCurveTo(sx, (sy+dy)/2, dx, (sy+dy)/2, dx, dy);
+    ctx.strokeStyle = 'rgba(200,245,74,0.5)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6,5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Pickup marker
+  if(pickupMarker) {
+    drawPulsingCircle(pickupMarker.x*w, pickupMarker.y*h, '#c8f54a', 'Pickup');
+  }
+
+  // Destination marker
+  if(destMarker) {
+    drawPin(destMarker.x*w, destMarker.y*h, '#ff6b6b');
+  }
+
+  // User location dot (current car)
+  const cx2 = carPos.x*w, cy2 = carPos.y*h;
+  ctx.beginPath();
+  ctx.arc(cx2,cy2,18,0,Math.PI*2);
+  ctx.fillStyle='rgba(200,245,74,0.08)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx2,cy2,10,0,Math.PI*2);
+  ctx.fillStyle='rgba(200,245,74,0.2)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx2,cy2,6,0,Math.PI*2);
+  ctx.fillStyle='#c8f54a';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx2,cy2,6,0,Math.PI*2);
+  ctx.strokeStyle='#0a0a0a';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  // Nearby cars
+  const nearCars = [
+    {x:0.35,y:0.42,a:0.3},{x:0.6,y:0.35,a:-0.5},{x:0.7,y:0.6,a:1.2},{x:0.28,y:0.62,a:2.5},
+  ];
+  nearCars.forEach(nc => drawCar(nc.x*w+ox, nc.y*h+oy, nc.a));
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h-r);
+  ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r); ctx.lineTo(x,y+r);
+  ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+}
+
+function drawCar(x, y, angle) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(angle);
+  ctx.fillStyle='#c8f54a';
+  ctx.beginPath();
+  ctx.ellipse(0,0,8,4,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPin(x,y,color) {
+  ctx.save();
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.arc(x,y-20,10,0,Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x-8,y-20);
+  ctx.lineTo(x+8,y-20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle='white';
+  ctx.beginPath();
+  ctx.arc(x,y-20,5,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPulsingCircle(x,y,color,label) {
+  const t = Date.now()/600;
+  const pulse = 1 + Math.sin(t)*0.2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x,y,16*pulse,0,Math.PI*2);
+  ctx.fillStyle=`rgba(200,245,74,0.08)`;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x,y,6,0,Math.PI*2);
+  ctx.fillStyle=color;
+  ctx.fill();
+  ctx.restore();
+}
+
+function animateMap() {
+  drawMap();
+  animFrame = requestAnimationFrame(animateMap);
+}
+
+// ─────── SCREEN NAV ───────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+// ─────── HOME SCREEN ───────
+function setDest(name, dist) {
+  state.dest = name;
+  state.destLabel = name;
+  document.getElementById('destDisplay').textContent = name;
+  document.getElementById('destDisplay').classList.add('filled');
+  destMarker = { x: 0.3 + Math.random()*0.4, y: 0.25 + Math.random()*0.3 };
+  pickupMarker = {...carPos};
+  routeDrawn = true;
+  document.getElementById('rideRouteLabel').textContent = `To ${name}`;
+  document.getElementById('routeProgress').style.width = '66%';
+  showScreen('rides');
+  showToast(`Route to ${name} found`);
+}
+
+function goHome() { showScreen('home'); routeDrawn = false; destMarker = null; }
+function backToLocation() { showScreen('rides'); }
+
+// ─────── LOCATION SCREEN ───────
+const allSuggestions = [
+  {name:'Times Square', addr:'Manhattan, New York', dist:'0.8 km'},
+  {name:'Central Park', addr:'Central Park West, New York', dist:'1.2 km'},
+  {name:'Grand Central Terminal', addr:'89 E 42nd St, New York', dist:'1.6 km'},
+  {name:'Brooklyn Bridge', addr:'Brooklyn Bridge, New York', dist:'3.4 km'},
+  {name:'Empire State Building', addr:'20 W 34th St, New York', dist:'1.9 km'},
+  {name:'One World Trade Center', addr:'285 Fulton St, New York', dist:'4.1 km'},
+  {name:'High Line Park', addr:'New York, NY 10011', dist:'2.3 km'},
+  {name:'Rockefeller Center', addr:'45 Rockefeller Plaza, NY', dist:'1.1 km'},
+  {name:'JFK International Airport', addr:'Jamaica, Queens, NY', dist:'24 km'},
+  {name:'LaGuardia Airport', addr:'East Elmhurst, Queens, NY', dist:'16 km'},
+];
+
+function openLocationScreen(type) {
+  state.activeInput = type;
+  showScreen('location');
+  renderSuggestions(allSuggestions);
+  if(type==='dest') {
+    document.getElementById('destInput').focus();
+  } else {
+    document.getElementById('pickupInput').focus();
+  }
+}
+
+function filterSuggestions(query, type) {
+  if(!query) { renderSuggestions(allSuggestions); return; }
+  const filtered = allSuggestions.filter(s =>
+    s.name.toLowerCase().includes(query.toLowerCase()) ||
+    s.addr.toLowerCase().includes(query.toLowerCase())
+  );
+  renderSuggestions(filtered);
+}
+
+function renderSuggestions(list) {
+  const el = document.getElementById('suggestionsList');
+  if(!list.length) {
+    el.innerHTML = '<div style="color:var(--gray3);font-size:14px;padding:20px 0;text-align:center">No results found</div>';
+    return;
+  }
+  el.innerHTML = list.map(s => `
+    <div class="suggestion-item" onclick="chooseSuggestion('${s.name}')">
+      <div class="sug-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <div class="sug-text">
+        <div class="sug-name">${s.name}</div>
+        <div class="sug-addr">${s.addr}</div>
+      </div>
+      <div class="sug-dist">${s.dist}</div>
+    </div>
+  `).join('');
+}
+
+function chooseSuggestion(name) {
+  state.dest = name;
+  state.destLabel = name;
+  document.getElementById('destDisplay').textContent = name;
+  document.getElementById('destDisplay').classList.add('filled');
+  destMarker = { x: 0.25 + Math.random()*0.45, y: 0.22 + Math.random()*0.35 };
+  pickupMarker = {...carPos};
+  routeDrawn = true;
+  document.getElementById('rideRouteLabel').textContent = `To ${name}`;
+  document.getElementById('routeProgress').style.width = '66%';
+  showScreen('rides');
+  showToast(`Route to ${name} found`);
+}
+
+// ─────── RIDE SELECT ───────
+function selectRide(el, name, price, eta) {
+  document.querySelectorAll('.ride-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selectedRide = name;
+  state.ridePrice = price;
+  state.rideEta = eta;
+}
+
+// ─────── CONFIRM RIDE ───────
+function confirmRide() {
+  showScreen('booking');
+  // Simulate finding driver
+  setTimeout(() => {
+    document.getElementById('searchingAnim').style.display = 'none';
+    document.getElementById('driverFound').style.display = 'block';
+    showToast('Driver found! Marcus is on the way');
+    startLiveEta();
+  }, 2500);
+}
+
+let etaCountdown = 3;
+let etaTimer;
+function startLiveEta() {
+  clearInterval(etaTimer);
+  etaCountdown = 3;
+  etaTimer = setInterval(() => {
+    if(etaCountdown <= 0) {
+      clearInterval(etaTimer);
+      document.getElementById('liveEta').innerHTML = 'HERE<small>ARRIVED</small>';
+      document.getElementById('tripProgress').style.width = '50%';
+      document.getElementById('tp2').classList.add('done');
+      showToast('Driver has arrived! 🎉');
+      return;
+    }
+    etaCountdown--;
+    document.getElementById('liveEta').innerHTML = `${etaCountdown}<small>MIN</small>`;
+  }, 4000);
+}
+
+function cancelRide() {
+  clearInterval(etaTimer);
+  routeDrawn = false; destMarker = null; pickupMarker = null;
+  document.getElementById('searchingAnim').style.display = 'block';
+  document.getElementById('driverFound').style.display = 'none';
+  state.dest = '';
+  document.getElementById('destDisplay').textContent = 'Where are you going?';
+  document.getElementById('destDisplay').classList.remove('filled');
+  showScreen('home');
+  showToast('Ride cancelled');
+}
+
+// ─────── LOCATE ───────
+function locateMe() {
+  carPos = {x: 0.4 + Math.random()*0.2, y: 0.45 + Math.random()*0.15};
+  showToast('Location updated');
+}
+
+// ─────── TOAST ───────
+let toastTimeout;
+function showToast(msg) {
+  clearTimeout(toastTimeout);
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ─────── INIT ───────
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+animateMap();
+renderSuggestions(allSuggestions);
+</script>
+</body>
+</html>
